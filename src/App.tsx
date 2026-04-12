@@ -1,4 +1,13 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "./firebase";
 
 type Tenant = {
   id: number;
@@ -76,19 +85,13 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("tenant-buildings-pro");
-    if (saved) {
-      try {
-        setBuildings(JSON.parse(saved));
-      } catch {
-        setBuildings([]);
-      }
-    }
-  }, []);
+    const unsubscribe = onSnapshot(collection(db, "buildings"), (snapshot) => {
+      const data = snapshot.docs.map((docItem) => docItem.data() as Building);
+      setBuildings(data);
+    });
 
-  useEffect(() => {
-    localStorage.setItem("tenant-buildings-pro", JSON.stringify(buildings));
-  }, [buildings]);
+    return () => unsubscribe();
+  }, []);
 
   const selectedBuilding = useMemo(() => {
     return buildings.find((b) => b.id === selectedBuildingId) || null;
@@ -142,7 +145,7 @@ export default function App() {
     setEnd("");
   }
 
-  function addBuilding() {
+  async function addBuilding() {
     if (!newBuildingName.trim()) {
       alert("يرجى كتابة اسم البناية");
       return;
@@ -154,23 +157,24 @@ export default function App() {
       tenants: [],
     };
 
-    setBuildings((prev) => [newBuilding, ...prev]);
+    await setDoc(doc(db, "buildings", String(newBuilding.id)), newBuilding);
+
     setNewBuildingName("");
     setShowBuildingForm(false);
   }
 
-  function deleteBuilding(id: number) {
+  async function deleteBuilding(id: number) {
     const ok = window.confirm("هل تريد حذف هذه البناية وكل المستأجرين داخلها؟");
     if (!ok) return;
 
-    setBuildings((prev) => prev.filter((building) => building.id !== id));
+    await deleteDoc(doc(db, "buildings", String(id)));
 
     if (selectedBuildingId === id) {
       setSelectedBuildingId(null);
     }
   }
 
-  function addTenant() {
+  async function addTenant() {
     if (!selectedBuilding) return;
 
     if (!name.trim() || !phone.trim() || !start || !end) {
@@ -191,34 +195,29 @@ export default function App() {
       end,
     };
 
-    setBuildings((prev) =>
-      prev.map((building) =>
-        building.id === selectedBuilding.id
-          ? { ...building, tenants: [newTenant, ...building.tenants] }
-          : building
-      )
-    );
+    const updatedTenants = [newTenant, ...selectedBuilding.tenants];
+
+    await updateDoc(doc(db, "buildings", String(selectedBuilding.id)), {
+      tenants: updatedTenants,
+    });
 
     resetTenantForm();
     setShowTenantForm(false);
   }
 
-  function deleteTenant(id: number) {
+  async function deleteTenant(id: number) {
     if (!selectedBuilding) return;
 
     const ok = window.confirm("هل تريد حذف هذا المستأجر؟");
     if (!ok) return;
 
-    setBuildings((prev) =>
-      prev.map((building) =>
-        building.id === selectedBuilding.id
-          ? {
-              ...building,
-              tenants: building.tenants.filter((tenant) => tenant.id !== id),
-            }
-          : building
-      )
+    const updatedTenants = selectedBuilding.tenants.filter(
+      (tenant) => tenant.id !== id
     );
+
+    await updateDoc(doc(db, "buildings", String(selectedBuilding.id)), {
+      tenants: updatedTenants,
+    });
   }
 
   function getStatus(daysLeft: number) {
@@ -972,7 +971,7 @@ export default function App() {
   );
 }
 
-const inputStyle: CSSProperties = {
+const inputStyle: React.CSSProperties = {
   width: "100%",
   border: "1px solid #d1d5db",
   borderRadius: 16,
