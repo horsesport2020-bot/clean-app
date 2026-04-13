@@ -84,14 +84,18 @@ export default function App() {
   const [passwordError, setPasswordError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
+ useEffect(() => {
+  try {
     const unsubscribe = onSnapshot(collection(db, "buildings"), (snapshot) => {
       const data = snapshot.docs.map((docItem) => docItem.data() as Building);
       setBuildings(data);
     });
 
     return () => unsubscribe();
-  }, []);
+  } catch (error) {
+    console.error("Firestore error:", error);
+  }
+}, []);
 
   const selectedBuilding = useMemo(() => {
     return buildings.find((b) => b.id === selectedBuildingId) || null;
