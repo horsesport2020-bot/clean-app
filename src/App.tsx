@@ -84,18 +84,18 @@ export default function App() {
   const [passwordError, setPasswordError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
- useEffect(() => {
-  try {
-    const unsubscribe = onSnapshot(collection(db, "buildings"), (snapshot) => {
-      const data = snapshot.docs.map((docItem) => docItem.data() as Building);
-      setBuildings(data);
-    });
+  useEffect(() => {
+    try {
+      const unsubscribe = onSnapshot(collection(db, "buildings"), (snapshot) => {
+        const data = snapshot.docs.map((docItem) => docItem.data() as Building);
+        setBuildings(data);
+      });
 
-    return () => unsubscribe();
-  } catch (error) {
-    console.error("Firestore error:", error);
-  }
-}, []);
+      return () => unsubscribe();
+    } catch (error) {
+      console.error("Firestore error:", error);
+    }
+  }, []);
 
   const selectedBuilding = useMemo(() => {
     return buildings.find((b) => b.id === selectedBuildingId) || null;
@@ -155,26 +155,39 @@ export default function App() {
       return;
     }
 
-    const newBuilding: Building = {
-      id: Date.now(),
-      name: newBuildingName.trim(),
-      tenants: [],
-    };
+    try {
+      const newBuilding: Building = {
+        id: Date.now(),
+        name: newBuildingName.trim(),
+        tenants: [],
+      };
 
-    await setDoc(doc(db, "buildings", String(newBuilding.id)), newBuilding);
+      await setDoc(doc(db, "buildings", String(newBuilding.id)), newBuilding);
 
-    setNewBuildingName("");
-    setShowBuildingForm(false);
+      alert("تم حفظ البناية بنجاح");
+      setNewBuildingName("");
+      setShowBuildingForm(false);
+    } catch (error) {
+      console.error("addBuilding error:", error);
+      alert("فشل حفظ البناية");
+    }
   }
 
   async function deleteBuilding(id: number) {
     const ok = window.confirm("هل تريد حذف هذه البناية وكل المستأجرين داخلها؟");
     if (!ok) return;
 
-    await deleteDoc(doc(db, "buildings", String(id)));
+    try {
+      await deleteDoc(doc(db, "buildings", String(id)));
 
-    if (selectedBuildingId === id) {
-      setSelectedBuildingId(null);
+      if (selectedBuildingId === id) {
+        setSelectedBuildingId(null);
+      }
+
+      alert("تم حذف البناية");
+    } catch (error) {
+      console.error("deleteBuilding error:", error);
+      alert("فشل حذف البناية");
     }
   }
 
@@ -191,22 +204,28 @@ export default function App() {
       return;
     }
 
-    const newTenant: Tenant = {
-      id: Date.now(),
-      name: name.trim(),
-      phone: phone.trim(),
-      start,
-      end,
-    };
+    try {
+      const newTenant: Tenant = {
+        id: Date.now(),
+        name: name.trim(),
+        phone: phone.trim(),
+        start,
+        end,
+      };
 
-    const updatedTenants = [newTenant, ...selectedBuilding.tenants];
+      const updatedTenants = [newTenant, ...selectedBuilding.tenants];
 
-    await updateDoc(doc(db, "buildings", String(selectedBuilding.id)), {
-      tenants: updatedTenants,
-    });
+      await updateDoc(doc(db, "buildings", String(selectedBuilding.id)), {
+        tenants: updatedTenants,
+      });
 
-    resetTenantForm();
-    setShowTenantForm(false);
+      alert("تم حفظ المستأجر بنجاح");
+      resetTenantForm();
+      setShowTenantForm(false);
+    } catch (error) {
+      console.error("addTenant error:", error);
+      alert("فشل حفظ المستأجر");
+    }
   }
 
   async function deleteTenant(id: number) {
@@ -215,13 +234,20 @@ export default function App() {
     const ok = window.confirm("هل تريد حذف هذا المستأجر؟");
     if (!ok) return;
 
-    const updatedTenants = selectedBuilding.tenants.filter(
-      (tenant) => tenant.id !== id
-    );
+    try {
+      const updatedTenants = selectedBuilding.tenants.filter(
+        (tenant) => tenant.id !== id
+      );
 
-    await updateDoc(doc(db, "buildings", String(selectedBuilding.id)), {
-      tenants: updatedTenants,
-    });
+      await updateDoc(doc(db, "buildings", String(selectedBuilding.id)), {
+        tenants: updatedTenants,
+      });
+
+      alert("تم حذف المستأجر");
+    } catch (error) {
+      console.error("deleteTenant error:", error);
+      alert("فشل حذف المستأجر");
+    }
   }
 
   function getStatus(daysLeft: number) {
@@ -975,7 +1001,7 @@ export default function App() {
   );
 }
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: "100%",
   border: "1px solid #d1d5db",
   borderRadius: 16,
