@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+<div style={{ color: "red", fontWeight: 700 }}>VERSION FIREBASE 777</div>
 import {
   collection,
   deleteDoc,
