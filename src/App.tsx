@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-<div style={{ color: "red", fontWeight: 700 }}>VERSION FIREBASE 777</div>
 import {
   collection,
   deleteDoc,
@@ -85,6 +84,9 @@ export default function App() {
   const [passwordError, setPasswordError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  const [popupMessage, setPopupMessage] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
+
   useEffect(() => {
     try {
       const unsubscribe = onSnapshot(collection(db, "buildings"), (snapshot) => {
@@ -143,6 +145,11 @@ export default function App() {
     }
   }
 
+  function openPopup(message: string) {
+    setPopupMessage(message);
+    setShowPopup(true);
+  }
+
   function resetTenantForm() {
     setName("");
     setPhone("");
@@ -165,7 +172,7 @@ export default function App() {
 
       await setDoc(doc(db, "buildings", String(newBuilding.id)), newBuilding);
 
-      alert("تم حفظ البناية بنجاح");
+      openPopup("تم حفظ البناية بنجاح");
       setNewBuildingName("");
       setShowBuildingForm(false);
     } catch (error) {
@@ -185,7 +192,7 @@ export default function App() {
         setSelectedBuildingId(null);
       }
 
-      alert("تم حذف البناية");
+      openPopup("تم حذف البناية بنجاح");
     } catch (error) {
       console.error("deleteBuilding error:", error);
       alert("فشل حذف البناية");
@@ -220,7 +227,7 @@ export default function App() {
         tenants: updatedTenants,
       });
 
-      alert("تم حفظ المستأجر بنجاح");
+      openPopup("تم حفظ المستأجر بنجاح");
       resetTenantForm();
       setShowTenantForm(false);
     } catch (error) {
@@ -244,7 +251,7 @@ export default function App() {
         tenants: updatedTenants,
       });
 
-      alert("تم حذف المستأجر");
+      openPopup("تم حذف المستأجر بنجاح");
     } catch (error) {
       console.error("deleteTenant error:", error);
       alert("فشل حذف المستأجر");
@@ -995,6 +1002,61 @@ export default function App() {
                 حفظ المستأجر
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showPopup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.38)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 520,
+              background: "white",
+              borderRadius: 28,
+              padding: 28,
+              boxShadow: "0 24px 70px rgba(0, 0, 0, 0.2)",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 800,
+                color: "#111827",
+                marginBottom: 18,
+              }}
+            >
+              {popupMessage}
+            </div>
+
+            <button
+              onClick={() => setShowPopup(false)}
+              style={{
+                border: "none",
+                background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                color: "white",
+                borderRadius: 16,
+                padding: "14px 34px",
+                fontSize: 18,
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: "0 14px 30px rgba(37, 99, 235, 0.24)",
+              }}
+            >
+              تم
+            </button>
           </div>
         </div>
       )}
